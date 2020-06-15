@@ -46,12 +46,14 @@ class MainWindow(QMainWindow):
     
     # === lower_hlayoutの中身 ======
     yes_btn = QPushButton('ある')
+    yes_btn.setShortcut("1")
     yes_btn.clicked.connect(lambda: self.updateScreen(True))
     yes_btn.setSizePolicy(QSizePolicy.Expanding, 200)
     yes_btn.setStyleSheet("background-color: red; color: white;")
     lower_hlayout.addWidget(yes_btn)
     
     no_btn = QPushButton('ない')
+    no_btn.setShortcut("0")
     no_btn.clicked.connect(lambda: self.updateScreen(False))
     no_btn.setSizePolicy(QSizePolicy.Expanding, 200)
     no_btn.setStyleSheet("background-color: blue; color: white;")
