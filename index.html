@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字予測マジック</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔮 数字予測マジック</h1>
+            <p class="subtitle">あなたの選んだ数字を当ててみせます！</p>
+        </header>
+
+        <div id="mode-selection" class="mode-selection">
+            <h2>モードを選択してください</h2>
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="startGame(100)">1-100の数字</button>
+                <button class="mode-btn" onclick="startGame(1000)">1-1000の数字</button>
+            </div>
+        </div>
+
+        <div id="game-screen" class="game-screen hidden">
+            <div class="game-info">
+                <p id="instruction" class="instruction"></p>
+            </div>
+            
+            <div id="numbers-grid" class="numbers-grid"></div>
+            
+            <div class="button-container">
+                <button id="yes-btn" class="action-btn yes-btn" onclick="updateScreen(true)">
+                    <span class="btn-text">ある</span>
+                    <span class="btn-shortcut">1</span>
+                </button>
+                <button id="no-btn" class="action-btn no-btn" onclick="updateScreen(false)">
+                    <span class="btn-text">ない</span>
+                    <span class="btn-shortcut">0</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="result-screen" class="result-screen hidden">
+            <div class="result-content">
+                <h2>結果発表</h2>
+                <p class="result-text">
+                    あなたの選んだ数字は<br>
+                    <span class="result-number" id="result-number"></span><br>
+                    ですね？
+                </p>
+                <div class="result-buttons">
+                    <button class="result-btn" onclick="restartGame()">最初から</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
