@@ -12,6 +12,7 @@
     --overprint: #0a2276; /* 青インクをピンクの上に重ね刷りした色 */
     --pink-dot: rgba(255, 79, 168, 0.38);
     --pink-dot-strong: rgba(255, 79, 168, 0.55);
+    --pink-dot-faint: rgba(255, 79, 168, 0.2);
     --pink-misreg: rgba(255, 79, 168, 0.85);
 
     /* 書体 */
@@ -88,12 +89,13 @@ body::after {
 /* ---------- レイアウト ---------- */
 
 .app {
-    max-width: 760px;
-    margin: 0 auto;
     padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
 }
 
 .screen {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
@@ -351,8 +353,12 @@ kbd {
     text-shadow: var(--misreg);
 }
 
+.game-screen .top-row {
+    margin-bottom: 12px;
+}
+
 .question {
-    margin: 16px 0 12px;
+    margin-top: 14px;
     font-size: 14px;
     font-weight: 700;
 }
@@ -391,15 +397,6 @@ kbd {
     text-align: center;
     font-family: var(--font-display);
     font-size: clamp(15px, 4.6vw, 18px);
-}
-
-.numbers-grid.is-dense {
-    grid-template-columns: repeat(8, 1fr);
-}
-
-.numbers-grid.is-dense .number-item {
-    padding: 4px 0;
-    font-size: 13px;
 }
 
 .button-container {
@@ -532,13 +529,73 @@ kbd {
     .number-item {
         font-size: 20px;
     }
+}
 
-    .numbers-grid.is-dense {
-        grid-template-columns: repeat(14, 1fr);
+/* ---------- 1〜1000モード: 全部の数字を1画面に収める ---------- */
+/* 文字サイズ(--size)と列数(--cols)は script.js の fitNumbers() が決める */
+
+.game-screen.is-dense {
+    max-width: 1200px;
+}
+
+.game-screen.is-dense .game-title {
+    display: none;
+}
+
+.game-screen.is-dense .top-row {
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.game-screen.is-dense .question {
+    margin-top: 6px;
+}
+
+.game-screen.is-dense .stamp {
+    width: 52px;
+    height: 52px;
+}
+
+.game-screen.is-dense #card-no {
+    font-size: 13px;
+}
+
+.game-screen.is-dense .sheet {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    padding: 6px 4px;
+    background-image: radial-gradient(var(--pink-dot-faint) 1.1px, transparent 1.5px);
+}
+
+.game-screen.is-dense .numbers-grid {
+    margin: auto 0;
+    grid-template-columns: repeat(var(--cols, 14), minmax(0, 1fr));
+    row-gap: 0;
+}
+
+.game-screen.is-dense .number-item {
+    padding: 0;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: var(--size, 11px);
+    line-height: 1.25; /* script.js の FIT_LINE_HEIGHT と合わせる */
+    font-variant-numeric: tabular-nums;
+}
+
+/* スマホでは上下の余白も詰めて、数字の場所を広げる */
+@media (max-width: 599px) {
+    .game-screen.is-dense {
+        padding-top: 12px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
     }
 
-    .numbers-grid.is-dense .number-item {
-        font-size: 15px;
+    .game-screen.is-dense .button-container {
+        padding-top: 12px;
+    }
+
+    .game-screen.is-dense .action-btn {
+        padding: 10px 0;
     }
 }
 

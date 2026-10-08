@@ -29,7 +29,7 @@ function startGame(max) {
     document.getElementById('game-screen').classList.remove('hidden');
     document.getElementById('result-screen').classList.add('hidden');
     document.getElementById('mode-label').textContent = `1〜${maxNumber} モード`;
-    document.getElementById('numbers-grid').classList.toggle('is-dense', maxNumber === 1000);
+    document.getElementById('game-screen').classList.toggle('is-dense', maxNumber === 1000);
 
     createScreen(step);
     updateInstruction();
@@ -55,7 +55,50 @@ function createScreen(stepIndex) {
     sheet.scrollTop = 0;
     replayAnimation(sheet);
     replayAnimation(document.getElementById('card-stamp'));
+    fitNumbers();
 }
+
+// 1〜1000モード: カードの広さに全部の数字が収まる、いちばん大きい文字サイズと列数を選ぶ
+const FIT_DIGIT_EM = 0.52;  // 数字1文字の幅（Zen Kaku Gothic New 太字）
+const FIT_GAP_EM = 0.5;     // 列と列のすき間
+const FIT_LINE_HEIGHT = 1.25; // style.css の .is-dense .number-item と合わせる
+const FIT_MIN_PX = 9;       // これより小さくはしない（収まらなければスクロール）
+const FIT_MAX_PX = 24;
+
+function fitNumbers() {
+    const screen = document.getElementById('game-screen');
+    const grid = document.getElementById('numbers-grid');
+    if (!screen.classList.contains('is-dense') || screen.classList.contains('hidden') || !grid.lastElementChild) {
+        return;
+    }
+
+    const sheet = document.getElementById('sheet');
+    const style = getComputedStyle(sheet);
+    const width = sheet.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    const height = sheet.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 1;
+    const count = grid.children.length;
+    // 4桁は最後の「1000」だけなので3桁で計算し、はみ出しは列のすき間で吸収する
+    const digits = Math.min(grid.lastElementChild.textContent.length, 3);
+
+    let best = { size: 0, cols: 1 };
+    for (let cols = 4; cols <= 40; cols++) {
+        const rows = Math.ceil(count / cols);
+        const size = Math.min(
+            width / cols / (digits * FIT_DIGIT_EM + FIT_GAP_EM),
+            height / rows / FIT_LINE_HEIGHT
+        );
+        if (size > best.size) {
+            best = { size, cols };
+        }
+    }
+
+    const size = Math.min(FIT_MAX_PX, Math.max(FIT_MIN_PX, Math.floor(best.size * 10) / 10));
+    grid.style.setProperty('--cols', best.cols);
+    grid.style.setProperty('--size', `${size}px`);
+}
+
+// 画面の回転やウィンドウのサイズ変更で、カードの広さが変わったら計算し直す
+new ResizeObserver(fitNumbers).observe(document.getElementById('sheet'));
 
 // CSSアニメーションを最初から再生し直す
 function replayAnimation(el) {
