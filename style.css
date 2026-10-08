@@ -1,293 +1,644 @@
-* {
-    margin: 0;
-    padding: 0;
+/* ==========================================================
+   数字予測マジック — リソグラフ印刷風
+   ピンクと青の2色インクを、ざらっとした紙に刷ったイメージ
+   ========================================================== */
+
+:root {
+    /* 紙とインク */
+    --paper: #f4eee1;
+    --paper-light: #fbf6ec;
+    --blue: #0a6fb3;
+    --pink: #ff4fa8;
+    --overprint: #0a2276; /* 青インクをピンクの上に重ね刷りした色 */
+    --pink-dot: rgba(255, 79, 168, 0.38);
+    --pink-dot-strong: rgba(255, 79, 168, 0.55);
+    --pink-misreg: rgba(255, 79, 168, 0.85);
+
+    /* 書体 */
+    --font-display: 'Dela Gothic One', 'Hiragino Sans', sans-serif;
+    --font-body: 'Zen Kaku Gothic New', 'Hiragino Sans', sans-serif;
+
+    /* 版ズレ（ピンクの版が少しずれて重なる） */
+    --misreg: 0.09em 0.06em 0 var(--pink-misreg);
+
+    --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .2  0 0 0 0 .15  0 0 0 0 .1  0 0 0 .2 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
+h1,
+p {
+    margin: 0;
+}
+
+button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    background: var(--paper);
+}
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin: 0;
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
+    background: var(--paper);
+    color: var(--blue);
+    font-family: var(--font-body);
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
 }
 
-.container {
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 1200px;
-    width: 100%;
-    padding: 40px;
-    text-align: center;
+/* 紙のざらつき。画面全体に重ねる */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    background-image: var(--grain);
+    mix-blend-mode: multiply;
+    opacity: 0.55;
 }
 
-header h1 {
-    color: #667eea;
-    font-size: 2.5em;
-    margin-bottom: 10px;
+::selection {
+    background: var(--pink);
+    color: var(--overprint);
 }
 
-.subtitle {
-    color: #666;
-    font-size: 1.1em;
-    margin-bottom: 30px;
+:focus-visible {
+    outline: 3px dashed var(--pink);
+    outline-offset: 4px;
 }
 
 .hidden {
     display: none !important;
 }
 
-/* Mode Selection */
-.mode-selection {
-    margin-top: 40px;
+/* ---------- レイアウト ---------- */
+
+.app {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
 }
 
-.mode-selection h2 {
-    color: #333;
-    margin-bottom: 30px;
-    font-size: 1.5em;
+.screen {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0 max(20px, env(safe-area-inset-bottom));
+}
+
+.top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.kicker {
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    color: var(--pink);
+}
+
+/* ---------- スタンプ ---------- */
+
+.stamp {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 10px;
+    line-height: 1.15;
+    transform: rotate(-12deg);
+}
+
+.stamp span {
+    display: block;
+}
+
+.stamp--pink {
+    color: var(--pink);
+    font-size: 11px;
+}
+
+.stamp--blue {
+    color: var(--blue);
+}
+
+#card-no {
+    font-size: 16px;
+    line-height: 1.1;
+}
+
+.stamp-total {
+    font-size: 9px;
+    opacity: 0.75;
+}
+
+.stamp.is-printing {
+    animation: thunk 0.35s ease-out;
+}
+
+/* ---------- インクのボタン（共通） ---------- */
+
+.mode-btn,
+.action-btn,
+.result-btn {
+    --tilt: 0deg;
+    --shadow: var(--pink);
+    font-family: var(--font-display);
+    border: 3px solid var(--blue);
+    box-shadow: 3px 3px 0 var(--shadow);
+    transform: rotate(var(--tilt));
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mode-btn:active,
+.action-btn:active,
+.result-btn:active {
+    transform: translate(3px, 3px) rotate(var(--tilt));
+    box-shadow: 0 0 0 var(--shadow);
+}
+
+@media (hover: hover) {
+    .mode-btn:hover,
+    .action-btn:hover,
+    .result-btn:hover {
+        transform: translate(-1px, -2px) rotate(var(--tilt));
+        box-shadow: 5px 6px 0 var(--shadow);
+    }
+
+    .mode-btn:active,
+    .action-btn:active,
+    .result-btn:active {
+        transform: translate(3px, 3px) rotate(var(--tilt));
+        box-shadow: 0 0 0 var(--shadow);
+    }
+}
+
+/* ピンクで塗ったボタン。文字は重ね刷りの色 */
+.mode-btn--pink,
+.yes-btn {
+    --shadow: var(--blue);
+    background: var(--pink);
+    border-color: var(--pink);
+    color: var(--overprint);
+}
+
+/* 青の線だけのボタン。中は網点 */
+.mode-btn--blue,
+.no-btn,
+.result-btn {
+    background-color: var(--paper-light);
+    background-image: radial-gradient(var(--pink-dot) 1.1px, transparent 1.5px);
+    background-size: 6px 6px;
+    color: var(--blue);
+}
+
+kbd {
+    display: none;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.4;
+    padding: 0 6px;
+    border: 1.5px solid currentColor;
+    border-radius: 6px;
+    opacity: 0.7;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    kbd {
+        display: inline-block;
+    }
+}
+
+/* ---------- モード選択 ---------- */
+
+.hero {
+    position: relative;
+    isolation: isolate;
+    margin: 40px 0 28px;
+}
+
+/* 見出しの後ろの網点の丸 */
+.hero::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: -36px;
+    right: -12px;
+    width: min(64vw, 330px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background-image: radial-gradient(var(--pink-dot-strong) 1.6px, transparent 2px);
+    background-size: 9px 9px;
+    animation: spin-in 0.8s ease-out both;
+}
+
+.hero-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(56px, 21vw, 124px);
+    line-height: 1.04;
+    letter-spacing: -0.01em;
+    color: var(--blue);
+}
+
+.hero-title span {
+    display: block;
+    text-shadow: var(--misreg);
+    animation: misregister 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.hero-title span:nth-child(2) {
+    padding-left: 1em;
+    animation-delay: 0.08s;
+}
+
+.hero-title span:nth-child(3) {
+    animation-delay: 0.16s;
+}
+
+.lead {
+    max-width: 36em;
+    margin-bottom: 32px;
+    word-break: auto-phrase;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.9;
+    animation: rise 0.6s 0.3s ease-out both;
+}
+
+.mode-pick {
+    max-width: 560px;
+    margin-top: auto;
+    animation: rise 0.6s 0.4s ease-out both;
+}
+
+.label {
+    margin-bottom: 14px;
+    font-family: var(--font-display);
+    font-size: 14px;
 }
 
 .mode-buttons {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
 }
 
 .mode-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 20px 40px;
-    font-size: 1.2em;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 8px 16px;
+    border-radius: 22px;
 }
 
-.mode-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+.mode-btn--pink {
+    --tilt: -2deg;
 }
 
-.mode-btn:active {
-    transform: translateY(0);
+.mode-btn--blue {
+    --tilt: 1.5deg;
 }
 
-/* Game Screen */
+.mode-range {
+    font-size: clamp(24px, 7vw, 36px);
+    line-height: 1;
+}
+
+.mode-meta {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* ---------- ゲーム ---------- */
+
 .game-screen {
-    margin-top: 30px;
+    height: 100vh;
+    height: 100dvh;
 }
 
-.game-info {
-    margin-bottom: 30px;
+.game-title {
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-size: clamp(26px, 7.5vw, 40px);
+    line-height: 1.12;
+    text-shadow: var(--misreg);
 }
 
-.instruction {
-    font-size: 1.3em;
-    color: #333;
-    margin-bottom: 10px;
-    font-weight: bold;
+.question {
+    margin: 16px 0 12px;
+    font-size: 14px;
+    font-weight: 700;
 }
 
-.step-info {
-    color: #666;
-    font-size: 1em;
+/* 数字を刷ったカード。数が多いときはカードの中だけスクロール */
+.sheet {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-right: 5px;
+    padding: 14px 8px;
+    background-color: var(--paper-light);
+    background-image: radial-gradient(var(--pink-dot) 1.1px, transparent 1.5px);
+    background-size: 6px 6px;
+    background-attachment: local;
+    border: 3px solid var(--blue);
+    border-radius: 14px;
+    box-shadow: 5px 5px 0 var(--pink);
+    scrollbar-width: thin;
+    scrollbar-color: var(--blue) transparent;
+}
+
+.sheet.is-printing {
+    animation: reprint 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .numbers-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 10px;
-    max-height: 400px;
-    overflow-y: auto;
-    padding: 20px;
-    background: #f5f5f5;
-    border-radius: 10px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(7, 1fr);
+    row-gap: 2px;
 }
 
 .number-item {
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #667eea;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
+    padding: 5px 0;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: clamp(15px, 4.6vw, 18px);
 }
 
-.number-item:hover {
-    transform: scale(1.05);
+.numbers-grid.is-dense {
+    grid-template-columns: repeat(8, 1fr);
+}
+
+.numbers-grid.is-dense .number-item {
+    padding: 4px 0;
+    font-size: 13px;
 }
 
 .button-container {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    padding-top: 24px;
 }
 
 .action-btn {
-    flex: 1;
-    max-width: 300px;
-    padding: 25px;
-    border: none;
-    border-radius: 10px;
-    font-size: 1.5em;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    position: relative;
-    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
+    padding: 13px 0;
+    border-radius: 999px;
+    font-size: 22px;
 }
 
 .yes-btn {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-}
-
-.yes-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(255, 107, 107, 0.4);
+    --tilt: -2deg;
 }
 
 .no-btn {
-    background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+    --tilt: 1.5deg;
 }
 
-.no-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 20px rgba(78, 205, 196, 0.4);
-}
+/* ---------- 結果 ---------- */
 
-.action-btn:active {
-    transform: translateY(0);
-}
-
-.btn-shortcut {
-    background: rgba(255, 255, 255, 0.3);
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 0.7em;
-}
-
-/* Result Screen */
 .result-screen {
-    margin-top: 40px;
+    justify-content: center;
+    text-align: center;
 }
 
 .result-content {
-    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.result-content h2 {
-    color: #667eea;
-    font-size: 2em;
-    margin-bottom: 30px;
+.pop {
+    font-family: var(--font-display);
+    font-size: 26px;
+    color: var(--pink);
+    transform: rotate(-6deg);
+    animation: pop 0.5s 0.1s ease-out both;
 }
 
-.result-text {
-    font-size: 1.3em;
-    color: #333;
-    line-height: 1.8;
-    margin-bottom: 30px;
+.result-lead {
+    margin-top: 14px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.burst {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    width: min(78vw, 300px);
+    aspect-ratio: 1;
+    margin: 4px 0;
+}
+
+.burst::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: 50%;
+    background-image: radial-gradient(var(--pink-dot-strong) 1.6px, transparent 2px);
+    background-size: 8px 8px;
+    animation: spin-in 0.6s ease-out both;
 }
 
 .result-number {
-    display: inline-block;
-    font-size: 2em;
-    color: #ff6b6b;
-    font-weight: bold;
-    margin: 10px 0;
-    padding: 10px 20px;
-    background: #fff5f5;
-    border-radius: 10px;
+    font-family: var(--font-display);
+    font-size: clamp(96px, 34vw, 150px);
+    line-height: 1;
+    text-shadow: var(--misreg);
+    animation: stamp-in 0.55s 0.25s ease-out both;
 }
 
-.result-buttons {
-    margin-top: 30px;
+.result-number[data-digits="3"] {
+    font-size: clamp(76px, 25vw, 116px);
+}
+
+.result-number[data-digits="4"] {
+    font-size: clamp(60px, 19vw, 92px);
+}
+
+.result-tail {
+    font-family: var(--font-display);
+    font-size: 26px;
 }
 
 .result-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 15px 40px;
-    font-size: 1.2em;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    font-weight: bold;
+    --tilt: -1deg;
+    margin-top: 36px;
+    min-width: 220px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    font-size: 18px;
 }
 
-.result-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-}
+/* ---------- 広い画面 ---------- */
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    .container {
-        padding: 20px;
+@media (min-width: 600px) {
+    .screen {
+        padding-top: 40px;
+        padding-bottom: 40px;
     }
 
-    header h1 {
-        font-size: 2em;
+    .question {
+        font-size: 16px;
+    }
+
+    .sheet {
+        padding: 18px 12px;
     }
 
     .numbers-grid {
-        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-        gap: 8px;
-        max-height: 300px;
+        grid-template-columns: repeat(11, 1fr);
+        row-gap: 4px;
     }
 
     .number-item {
-        padding: 10px;
-        font-size: 1.2em;
+        font-size: 20px;
     }
 
-    .button-container {
-        flex-direction: column;
+    .numbers-grid.is-dense {
+        grid-template-columns: repeat(14, 1fr);
     }
 
-    .action-btn {
-        max-width: 100%;
-    }
-
-    .mode-buttons {
-        flex-direction: column;
-    }
-
-    .mode-btn {
-        width: 100%;
+    .numbers-grid.is-dense .number-item {
+        font-size: 15px;
     }
 }
 
-/* Scrollbar Styling */
-.numbers-grid::-webkit-scrollbar {
-    width: 10px;
+/* ---------- 動き ---------- */
+
+/* ピンクの版が遠くから寄ってきて、ぴたっと重なる */
+@keyframes misregister {
+    from {
+        opacity: 0;
+        text-shadow: 0.35em 0.22em 0 var(--pink-misreg);
+    }
+    40% {
+        opacity: 1;
+    }
+    to {
+        text-shadow: var(--misreg);
+    }
 }
 
-.numbers-grid::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
+/* カードを刷り直す */
+@keyframes reprint {
+    from {
+        opacity: 0.2;
+        transform: translate(-6px, -4px);
+        box-shadow: 16px 12px 0 var(--pink);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+        box-shadow: 5px 5px 0 var(--pink);
+    }
 }
 
-.numbers-grid::-webkit-scrollbar-thumb {
-    background: #667eea;
-    border-radius: 10px;
+/* スタンプを押す */
+@keyframes thunk {
+    from {
+        opacity: 0;
+        transform: rotate(-12deg) scale(1.5);
+    }
+    60% {
+        opacity: 1;
+        transform: rotate(-12deg) scale(0.94);
+    }
+    to {
+        transform: rotate(-12deg) scale(1);
+    }
 }
 
-.numbers-grid::-webkit-scrollbar-thumb:hover {
-    background: #5568d3;
+@keyframes stamp-in {
+    from {
+        opacity: 0;
+        transform: scale(2.2) rotate(-8deg);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(0.95) rotate(0deg);
+    }
+    to {
+        transform: none;
+    }
 }
 
+@keyframes spin-in {
+    from {
+        opacity: 0;
+        transform: scale(0.6) rotate(-30deg);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes pop {
+    from {
+        opacity: 0;
+        transform: rotate(-6deg) translateY(10px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: rotate(-6deg);
+    }
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}

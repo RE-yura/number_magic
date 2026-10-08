@@ -28,7 +28,9 @@ function startGame(max) {
     document.getElementById('mode-selection').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
     document.getElementById('result-screen').classList.add('hidden');
-    
+    document.getElementById('mode-label').textContent = `1〜${maxNumber} モード`;
+    document.getElementById('numbers-grid').classList.toggle('is-dense', maxNumber === 1000);
+
     createScreen(step);
     updateInstruction();
 }
@@ -45,12 +47,27 @@ function createScreen(stepIndex) {
         item.textContent = num;
         grid.appendChild(item);
     });
+
+    // カード番号のスタンプと、刷り直し演出
+    document.getElementById('card-no').textContent = `No.${stepIndex + 1}`;
+    document.getElementById('card-total').textContent = `/${maxStep + 1}`;
+    const sheet = document.getElementById('sheet');
+    sheet.scrollTop = 0;
+    replayAnimation(sheet);
+    replayAnimation(document.getElementById('card-stamp'));
+}
+
+// CSSアニメーションを最初から再生し直す
+function replayAnimation(el) {
+    el.classList.remove('is-printing');
+    void el.offsetWidth;
+    el.classList.add('is-printing');
 }
 
 // 指示文更新
 function updateInstruction() {
     const instruction = document.getElementById('instruction');
-    instruction.textContent = `1-${maxNumber}の中で好きな数字を選んでください。\n画面に表示される数字群の中に自分の選んだ数字があれば「ある」ボタンを、なければ「ない」ボタンをクリックしてください。`;
+    instruction.textContent = 'この中に、きみの数はある？';
 }
 
 // 画面更新
@@ -73,7 +90,9 @@ function updateScreen(isThere) {
 function showResult() {
     document.getElementById('game-screen').classList.add('hidden');
     document.getElementById('result-screen').classList.remove('hidden');
-    document.getElementById('result-number').textContent = selectedNum;
+    const resultNumber = document.getElementById('result-number');
+    resultNumber.textContent = selectedNum;
+    resultNumber.dataset.digits = String(selectedNum).length;
 }
 
 // ゲーム再開
@@ -95,9 +114,12 @@ document.addEventListener('keydown', (e) => {
         return;
     }
     
+    // フォーカス中のボタンが Enter で押されて二重に進まないよう、既定動作を止める
     if (e.key === '1' || e.key === 'Enter') {
+        e.preventDefault();
         updateScreen(true);
     } else if (e.key === '0' || e.key === 'Escape') {
+        e.preventDefault();
         updateScreen(false);
     }
 });
