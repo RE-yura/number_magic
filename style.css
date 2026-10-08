@@ -48,6 +48,8 @@ button {
 
 html {
     background: var(--paper);
+    /* ボタンを素早く押したときのダブルタップ拡大を止める（ピンチでの拡大はできる） */
+    touch-action: manipulation;
 }
 
 body {
