@@ -133,9 +133,16 @@ function updateScreen(isThere) {
 function showResult() {
     document.getElementById('game-screen').classList.add('hidden');
     document.getElementById('result-screen').classList.remove('hidden');
+
+    // 0 や範囲外の数は、答え方を間違えたときにしか出ない
+    const isValid = selectedNum >= 1 && selectedNum <= maxNumber;
+    const shown = isValid ? String(selectedNum) : '？';
+    document.getElementById('result-pop').textContent = isValid ? 'ジャーン！' : 'あれれ？';
+    document.getElementById('result-lead').textContent = isValid ? 'きみが選んだ数は' : 'カードの答えが合わないみたい';
+    document.getElementById('result-tail').textContent = isValid ? 'でしょ？' : `1〜${maxNumber}の中から選んだ？`;
     const resultNumber = document.getElementById('result-number');
-    resultNumber.textContent = selectedNum;
-    resultNumber.dataset.digits = String(selectedNum).length;
+    resultNumber.textContent = shown;
+    resultNumber.dataset.digits = shown.length;
 }
 
 // ゲーム再開

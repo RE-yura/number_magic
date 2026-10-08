@@ -503,7 +503,8 @@ kbd {
 
 .result-tail {
     font-family: var(--font-display);
-    font-size: 26px;
+    font-size: min(26px, 6.4vw); /* 「1〜1000の中から選んだ？」が細い画面でも1行に収まる大きさ */
+    text-wrap: balance;
 }
 
 .result-btn {
