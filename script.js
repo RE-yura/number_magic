@@ -174,3 +174,57 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// iPhone Safari: 素早い2回目のタップで画面が拡大されないようにする
+// 2回目のタップの既定動作を止めるとクリックも起きないので、ボタンならこちらで押す
+const DOUBLE_TAP_MS = 350;
+const TAP_MOVE_PX = 10;
+const NATIVE_CLICK_MS = 300;
+let lastTapEnd = 0;
+let tapStart = null;
+let pressedByTap = null; // こちらで押したボタンと時刻
+
+document.addEventListener('touchstart', (e) => {
+    // 2本指以上（ピンチ）は対象外
+    tapStart = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+    // 指が動いたらスクロールなので対象外
+    const touch = e.touches[0];
+    if (tapStart && (Math.abs(touch.clientX - tapStart.x) > TAP_MOVE_PX || Math.abs(touch.clientY - tapStart.y) > TAP_MOVE_PX)) {
+        tapStart = null;
+    }
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+    const isTap = tapStart !== null && e.touches.length === 0;
+    tapStart = null;
+    if (!isTap) {
+        return;
+    }
+
+    const now = Date.now();
+    if (now - lastTapEnd < DOUBLE_TAP_MS) {
+        e.preventDefault();
+        const button = e.target.closest('button');
+        if (button) {
+            pressedByTap = { button, time: now };
+            button.click();
+        }
+    }
+    lastTapEnd = now;
+}, { passive: false });
+
+// それでも Safari 本来のクリックが同じボタンに届いたら、二重に数えないよう捨てる
+document.addEventListener('click', (e) => {
+    if (!pressedByTap || !e.isTrusted) {
+        return;
+    }
+    const isDuplicate = e.target.closest('button') === pressedByTap.button && Date.now() - pressedByTap.time < NATIVE_CLICK_MS;
+    pressedByTap = null;
+    if (isDuplicate) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+    }
+}, true);
+
