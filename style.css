@@ -369,6 +369,50 @@ kbd {
     margin-bottom: 12px;
 }
 
+.kicker-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 途中でやめてモード選択に戻るボタン。「ある / ない」から遠い左上に小さく置く */
+.restart-btn {
+    position: relative;
+    font-family: var(--font-display);
+    font-size: 11px;
+    line-height: 1.2;
+    padding: 3px 10px 3px 8px;
+    border: 2px solid var(--blue);
+    border-radius: 999px;
+    background: var(--paper-light);
+    box-shadow: 2px 2px 0 var(--pink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* 見た目は小さいまま、指で押せる範囲だけ広げる */
+.restart-btn::after {
+    content: '';
+    position: absolute;
+    inset: -12px -8px;
+}
+
+.restart-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--pink);
+}
+
+@media (hover: hover) {
+    .restart-btn:hover {
+        transform: translate(-1px, -1px);
+        box-shadow: 3px 3px 0 var(--pink);
+    }
+
+    .restart-btn:active {
+        transform: translate(2px, 2px);
+        box-shadow: 0 0 0 var(--pink);
+    }
+}
+
 .question {
     margin-top: 14px;
     font-size: 14px;
